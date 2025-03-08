@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Card, CardContent, TextareaAutosize } from '@mui/material';
+import { Button, Card, CardContent, Typography, TextareaAutosize, TextField, Container, Paper } from '@mui/material';
 import { db } from "./firebase"; // Firebase Konfiguration
 import { collection, addDoc, getDocs } from "firebase/firestore";
 
@@ -27,18 +27,32 @@ export default function WikiApp() {
     <div className="p-4 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Kampagnen-Wiki</h1>
       <div className="mb-4">
-        <TextareaAutosize
-          placeholder="Neuen Eintrag verfassen..."
-          value={newEntry}
-          onChange={(e) => setNewEntry(e.target.value)}
-          className="mb-2"
-        />
-        <Button onClick={addEntry}>Eintrag hinzufügen</Button>
+        <Container maxWidth="sm">
+          <Paper elevation={3} style={{ padding: "20px", marginTop: "20px" }}>
+            <Typography variant="h5" gutterBottom>
+              Neuen Eintrag erstellen
+            </Typography>
+            <TextField
+              label="Eintrag"
+              variant="outlined"
+              fullWidth
+              multiline
+              rows={4}
+              value={newEntry}
+              onChange={(e) => setNewEntry(e.target.value)}
+            />
+            <Button variant="contained" color="primary" onClick={addEntry} style={{ marginTop: "10px" }}>
+              Speichern
+            </Button>
+          </Paper>
+        </Container>
       </div>
       <div>
         {entries.map((entry) => (
-          <Card key={entry.id} className="mb-2">
-            <CardContent>{entry.content}</CardContent>
+          <Card key={entry.id} style={{ marginBottom: "10px" }}>
+            <CardContent>
+              <Typography variant="body1">{entry.content}</Typography>
+            </CardContent>
           </Card>
         ))}
       </div>
