@@ -1,82 +1,144 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { db } from "./firebase";
-import { collection, addDoc, doc, setDoc } from "firebase/firestore";
-import { Button, Container, Typography, Paper } from "@mui/material";
-import ReactQuill from "react-quill";
+import { collection, addDoc, doc, getDoc } from "firebase/firestore";
+import { Container, TextField, Button, Typography } from "@mui/material";
 import "react-quill/dist/quill.snow.css";
-import { debounce } from "lodash";
+import ReactQuill from "react-quill";
 
-export default function EditorPage() {
-  const [newEntry, setNewEntry] = useState("");
-  const [entryId, setEntryId] = useState(null); // ID des gespeicherten Eintrags
+export default function TextEditorPage() {
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [text, setText] = useState("");
+  const [characters, setCharacters] = useState([]); // Temporär lokale Eingaben
+  const [characterIds, setCharacterIds] = useState([]); // IDs für Referenzen
 
-  // Speichern mit Verzögerung (Auto-Save)
-  const saveEntry = debounce(async (content) => {
-    if (!entryId) {
-      const docRef = await addDoc(collection(db, "entries"), { content });
-      setEntryId(docRef.id); // Speichere die ID für spätere Updates
-    } else {
-      await setDoc(doc(db, "entries", entryId), { content });
+  // ✅ Charakter hinzufügen (und in Firebase speichern)
+  const handleAddCharacter = async () => {
+    const newChar = { name: "", nachname: "", ethnie: "", info: "" };
+    setCharacters([...characters, newChar]); // Lokales Formular erweitern
+
+    // Charakter sofort in Firebase speichern und ID merken
+    const docRef = await addDoc(collection(db, "characters"), newChar);
+    setCharacterIds([...characterIds, docRef.id]);
+  };
+
+  // ✅ Eintrag speichern (mit Referenz zu Charakteren)
+  const handleSave = async () => {
+    try {
+      await addDoc(collection(db, "entries"), {
+        title,
+        date,
+        text,
+        characterIds, // Nur IDs speichern
+      });
+
+      alert("Eintrag erfolgreich gespeichert!");
+
+      // Reset
+      setTitle("");
+      setDate("");
+      setText("");
+      setCharacters([]);
+      setCharacterIds([]);
+    } catch (error) {
+      console.error("Fehler beim Speichern: ", error);
+      alert("Fehler beim Speichern. Siehe Konsole.");
     }
-  }, 500);
-
-  const handleTextChange = (content) => {
-    setNewEntry(content);
-    saveEntry(content);
   };
-
-  const insertCharacter = async () => {
-    const characterData = {
-      name: "Unbekannt",
-      nachname: "Unbekannt",
-      ethnie: "Unbekannt",
-      info: "Kurzbeschreibung",
-    };
-
-    const docRef = await addDoc(collection(db, "characters"), characterData);
-
-    const characterHTML = `
-      <div style="border: 2px solid #007bff; padding: 10px; margin: 10px 0; border-radius: 5px;">
-        <strong>Name:</strong> ${characterData.name} <br>
-        <strong>Nachname:</strong> ${characterData.nachname} <br>
-        <strong>Ethnie:</strong> ${characterData.ethnie} <br>
-        <strong>Infos:</strong> ${characterData.info}
-      </div>`;
-
-    setNewEntry(prev => prev + characterHTML);
-    saveEntry(newEntry + characterHTML);
-  };
-
-  const customToolbar = (
-    <div id="toolbar">
-      <button onClick={insertCharacter} style={{ margin: "5px", padding: "5px 10px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "3px", cursor: "pointer" }}>
-        Charakter einfügen
-      </button>
-    </div>
-  );
 
   return (
-    <Container maxWidth="sm">
-      <Paper elevation={3} style={{ padding: "20px", marginTop: "20px" }}>
-        <Typography variant="h5" gutterBottom>Neuen Eintrag erstellen</Typography>
-        {customToolbar}
-        <ReactQuill
-          value={newEntry}
-          onChange={handleTextChange}
-          modules={{
-            toolbar: {
-              container: [
-                [{ header: [1, 2, false] }],
-                ["bold", "italic", "underline"],
-                [{ list: "ordered" }, { list: "bullet" }],
-                ["blockquote", "code-block"],
-                ["clean"],
-                [{ insert: "character" }]
-              ],
-            }
-          }}
-        />
-      </Paper>
+    <Container>
+      <Typography variant="h4" gutterBottom>Neuen Eintrag erstellen</Typography>
+
+      <TextField
+        label="Titel"
+        variant="outlined"
+        fullWidth
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{ marginBottom: '20px' }}
+      />
+
+      <TextField
+        label="Datum"
+        type="date"
+        variant="outlined"
+        fullWidth
+        InputLabelProps={{ shrink: true }}
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        style={{ marginBottom: '20px' }}
+      />
+
+      <ReactQuill
+        theme="snow"
+        value={text}
+        onChange={setText}
+        style={{ height: '200px', marginBottom: '20px' }}
+      />
+
+      <Button
+        variant="outlined"
+        onClick={handleAddCharacter}
+        style={{ marginRight: '20px' }}
+      >
+        Charakter hinzufügen
+      </Button>
+
+      {characters.map((char, index) => (
+        <div key={index} style={{ marginBottom: '10px', border: '1px solid gray', padding: '10px', borderRadius: '5px' }}>
+          <TextField
+            label="Vorname"
+            value={char.name}
+            onChange={(e) => {
+              const updatedChars = [...characters];
+              updatedChars[index].name = e.target.value;
+              setCharacters(updatedChars);
+
+              // Gleichzeitig updaten in Firebase
+              const charRef = doc(db, "characters", characterIds[index]);
+              charRef && charRef.id &&
+                addDoc(collection(db, "characters"), { ...updatedChars[index] }); // Optional: Update wenn nötig
+            }}
+            style={{ marginRight: '10px' }}
+          />
+          <TextField
+            label="Nachname"
+            value={char.nachname}
+            onChange={(e) => {
+              const updatedChars = [...characters];
+              updatedChars[index].nachname = e.target.value;
+              setCharacters(updatedChars);
+            }}
+            style={{ marginRight: '10px' }}
+          />
+          <TextField
+            label="Ethnie"
+            value={char.ethnie}
+            onChange={(e) => {
+              const updatedChars = [...characters];
+              updatedChars[index].ethnie = e.target.value;
+              setCharacters(updatedChars);
+            }}
+            style={{ marginRight: '10px' }}
+          />
+          <TextField
+            label="Infos"
+            value={char.info}
+            onChange={(e) => {
+              const updatedChars = [...characters];
+              updatedChars[index].info = e.target.value;
+              setCharacters(updatedChars);
+            }}
+            fullWidth
+            style={{ marginTop: '10px' }}
+          />
+        </div>
+      ))}
+
+      <Button variant="contained" color="primary" onClick={handleSave}>
+        Eintrag speichern
+      </Button>
     </Container>
   );
 }

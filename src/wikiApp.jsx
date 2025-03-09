@@ -11,7 +11,7 @@ export default function WikiApp() {
     <Router>
       <Container maxWidth="sm" style={{ marginTop: "20px", textAlign: "center" }}>
         <Button component={Link} to="/" variant="outlined" style={{ marginRight: "10px" }}>Einträge</Button>
-        <Button component={Link} to="/editor" variant="contained" style={{ marginRight: "10px" }}>Neuer Eintrag</Button>
+        <Button component={Link} to="/editor" variant="outlined" style={{ marginRight: "10px" }}>Neuer Eintrag</Button>
         <Button component={Link} to="/characters" variant="outlined">Charaktere</Button>
 
         <Routes>

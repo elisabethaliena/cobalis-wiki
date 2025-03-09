@@ -19,9 +19,16 @@ export default function EntriesPage() {
     <Container maxWidth="sm">
       <Typography variant="h4" gutterBottom>Alle Einträge</Typography>
       {entries.map((entry) => (
-        <Card key={entry.id} style={{ marginBottom: "10px" }} component={Link} to={`/entry/${entry.id}`}>
+        <Card key={entry.id} style={{ marginBottom: '20px' }}>
           <CardContent>
-            <Typography component="div" dangerouslySetInnerHTML={{ __html: entry.content }} />
+            <Typography variant="h6">
+              <Link to={`/entry/${entry.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                {entry.title || "Kein Titel"}
+              </Link>
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              {entry.date ? new Date(entry.date).toLocaleDateString() : "Kein Datum"}
+            </Typography>
           </CardContent>
         </Card>
       ))}
